@@ -1,16 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kontrol LED ESP32</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1>Kontrol LED ESP32</h1>
-  <button id="onBtn">HIDUPKAN LED</button>
-  <button id="offBtn">MATIKAN LED</button>
+#include <WiFi.h>
+#include <PubSubClient.h>
 
-  <script src="script.js"></script>
-</body>
-</html>
+const char* ssid = "POCO M3";
+const char* password = "tedihrynto";
+
+const char* mqttServer = "broker.hivemq.com";
+const int mqttPort = 1883;
+const char* topic = "esp32/led/control";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+const int ledPin = 2;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected: " + WiFi.localIP().toString());
+
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+
+  while (!client.connected()) {
+    Serial.print("Connecting to MQTT...");
+    if (client.connect("ESP32Client1234567")) {
+      Serial.println("Connected!");
+    } else {
+      Serial.print("Failed: ");
+      Serial.println(client.state());
+      delay(2000);
+    }
+  }
+
+  client.subscribe(topic);
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String msg;
+  for (int i = 0; i < length; i++) {
+    msg += (char)payload[i];
+  }
+  Serial.println("MQTT Message: " + msg);
+
+  if (msg == "ON") {
+    digitalWrite(ledPin, HIGH);
+  } else if (msg == "OFF") {
+    digitalWrite(ledPin, LOW);
+  }
+}
+
+void loop() {
+  client.loop();
+}
