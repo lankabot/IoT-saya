@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kontrol Lampu MQTT</title>
+
+  <!-- MQTT.js -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    .status {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    .lampu {
+      font-size: 18px;
+      margin: 15px 0;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .on {
+      background: #4CAF50;
+      color: white;
+    }
+    .off {
+      background: #f44336;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>💡 Kontrol Lampu</h2>
+
+  <div class="status">
+    Status MQTT: <span id="status">Menghubungkan...</span>
+  </div>
+
+  <div class="lampu">
+    Status Lampu: <span id="lampu">-</span>
+  </div>
+
+  <button class="on" onclick="lampuOn()">LAMPU ON</button>
+  <button class="off" onclick="lampuOff()">LAMPU OFF</button>
+</div>
+
+<script>
+  // ===============================
+  // KONFIGURASI
+  // ===============================
+  const MQTT_BROKER = "wss://broker.avisha.id:8084/mqtt";
+  const MQTT_USER   = "tediharyanto";   // GANTI
+  const MQTT_PASS   = "AkunBelajr";   // GANTI
+  const TOPIC_LAMPU = "tediharyanto/lampu";
+
+  // ===============================
+  // KONEKSI MQTT
+  // ===============================
+  const client = mqtt.connect(MQTT_BROKER, {
+    username: MQTT_USER,
+    password: MQTT_PASS,
+    clean: true,
+    connectTimeout: 5000
+  });
+
+  client.on("connect", () => {
+    document.getElementById("status").innerText = "Terhubung";
+    client.subscribe(TOPIC_LAMPU);
+  });
+
+  client.on("reconnect", () => {
+    document.getElementById("status").innerText = "Menghubungkan ulang...";
+  });
+
+  client.on("error", (error) => {
+    document.getElementById("status").innerText = "Gagal koneksi";
+    console.error(error);
+  });
+
+  client.on("message", (topic, message) => {
+    if (topic === TOPIC_LAMPU) {
+      document.getElementById("lampu").innerText = message.toString();
+    }
+  });
+
+  // ===============================
+  // FUNGSI KONTROL
+  // ===============================
+  function lampuOn() {
+    client.publish(TOPIC_LAMPU, "ON");
+  }
+
+  function lampuOff() {
+    client.publish(TOPIC_LAMPU, "OFF");
+  }
+</script>
+
+</body>
+</html>
